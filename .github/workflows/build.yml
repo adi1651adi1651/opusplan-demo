@@ -17,3 +17,12 @@ jobs:
           ./tasks list
           ./tasks done 1
           ./tasks list
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile unit tests
+        run: g++ -std=c++17 -Wall -Wextra -o test_tasks tests/test_tasks.cpp
+      - name: Run unit tests
+        run: ./test_tasks
