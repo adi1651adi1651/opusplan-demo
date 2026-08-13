@@ -42,3 +42,7 @@ The CI smoke test (in the `build` job) is a separate, integration-level check â€
 - **`main.cpp`** â€” `main` dispatches on `argv[1]` (`add`, `list`, `done`) between loading tasks, mutating the in-memory vector, and saving back to disk.
 
 `tasks.json` is created at runtime next to the executable and is not part of the source tree.
+
+## Tooling
+
+Use the `/permissions` command in Claude Code to view or change which tools/commands are auto-allowed, ask for confirmation, or are denied in this project.
