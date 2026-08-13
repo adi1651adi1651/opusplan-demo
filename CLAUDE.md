@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A C++17 command-line task manager. It supports adding tasks, listing them, and marking them done, persisting state to `tasks.json` in the working directory.
+A C++17 command-line task manager. It supports adding tasks, listing them, updating their text, and marking them done, persisting state to `tasks.json` in the working directory.
 
 ## Build and run
 
@@ -39,7 +39,7 @@ The CI smoke test (in the `build` job) is a separate, integration-level check �
   - **`JsonParser`** — a hand-rolled recursive-descent parser scoped only to the exact array-of-`{id,text,done}` shape this program writes (see `parseTasks`/`parseTask`). It is not a general JSON parser: unknown keys are skipped via `skipValue`, but the overall shape (top-level array of flat objects) is assumed, not validated. It is also tolerant of missing trailing `}`/`]` (see tests) rather than erroring.
   - **`loadTasks`/`saveTasks`** — read/write `tasks.json` (path fixed via `kTasksFile`) using the parser above and manual string escaping (`escapeJson`) for serialization. There is no external JSON dependency.
   - **`nextId`** — `max(existing ids) + 1` (not reused after deletion, though there is currently no delete command).
-- **`main.cpp`** — `main` dispatches on `argv[1]` (`add`, `list`, `done`) between loading tasks, mutating the in-memory vector, and saving back to disk.
+- **`main.cpp`** — `main` dispatches on `argv[1]` (`add`, `list`, `done`, `update`) between loading tasks, mutating the in-memory vector, and saving back to disk.
 
 `tasks.json` is created at runtime next to the executable and is not part of the source tree.
 

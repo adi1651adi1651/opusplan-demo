@@ -6,9 +6,10 @@
 
 void printUsage() {
     std::cout << "Usage:\n"
-              << "  tasks add <text...>   Add a new task\n"
-              << "  tasks list            List all tasks\n"
-              << "  tasks done <id>       Mark task as done\n";
+              << "  tasks add <text...>          Add a new task\n"
+              << "  tasks list                   List all tasks\n"
+              << "  tasks done <id>              Mark task as done\n"
+              << "  tasks update <id> <text...>  Update a task's text\n";
 }
 
 int main(int argc, char** argv) {
@@ -59,6 +60,31 @@ int main(int argc, char** argv) {
         if (found) {
             saveTasks(kTasksFile, tasks);
             std::cout << "Marked task " << id << " as done.\n";
+        } else {
+            std::cout << "Task " << id << " not found.\n";
+        }
+    } else if (command == "update") {
+        if (argc < 4) {
+            std::cout << "Error: please provide a task id and new text.\n";
+            return 1;
+        }
+        int id = std::stoi(argv[2]);
+        std::string text;
+        for (int i = 3; i < argc; i++) {
+            if (i > 3) text += " ";
+            text += argv[i];
+        }
+        bool found = false;
+        for (auto& t : tasks) {
+            if (t.id == id) {
+                t.text = text;
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            saveTasks(kTasksFile, tasks);
+            std::cout << "Updated task " << id << ": " << text << "\n";
         } else {
             std::cout << "Task " << id << " not found.\n";
         }
