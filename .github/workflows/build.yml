@@ -1,0 +1,19 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile main.cpp
+        run: g++ -std=c++17 -Wall -Wextra -o tasks main.cpp
+      - name: Smoke test CLI
+        run: |
+          ./tasks add "test task"
+          ./tasks list
+          ./tasks done 1
+          ./tasks list
