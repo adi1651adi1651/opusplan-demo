@@ -4,45 +4,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A C++17 command-line task manager. It supports adding tasks, listing them, updating their text, and marking them done, persisting state to `tasks.json` in the working directory.
+A Python 3 command-line task manager. It supports adding tasks, listing them, updating their text, and marking them done, persisting state to `tasks.json` in the working directory.
+
+This was originally a C++17 implementation; it was fully ported to Python, retiring the C++ sources in favor of a Python one.
 
 ## Build and run
 
-There is no build system file (no CMakeLists.txt, Makefile, or vcxproj) — compile directly:
+No build step — run directly with Python 3 (uses only the standard library, no dependencies to install):
 
 ```sh
-g++ -std=c++17 -o tasks main.cpp
-./tasks add "buy milk"
-./tasks list
-./tasks done 1
+python main.py add "buy milk"
+python main.py list
+python main.py done 1
+python main.py update 1 "buy oat milk"
 ```
-
-No compiler is guaranteed to be present in the dev environment (g++/clang++/cl may all be absent) — verify with `g++ --version` before assuming a build will succeed. GitHub Actions (`.github/workflows/build.yml`) is where the project is actually built and tested on every push/PR.
 
 ## Tests
 
-Unit tests live in `tests/test_tasks.cpp` and cover `escapeJson`, `JsonParser`, `loadTasks`/`saveTasks`, and `nextId` directly (all defined in `tasks.hpp`, see Architecture below). They use a small hand-rolled `check`/`checkEq` harness — no external test framework, consistent with this project's zero-dependency approach (the same reasoning behind hand-rolling `JsonParser` instead of taking a JSON library dependency). Build and run with:
+Unit tests live in `tests/test_tasks.py` and cover `load_tasks`/`save_tasks`/`next_id` (all defined in `tasks.py`, see Architecture below) via Python's stdlib `unittest`. Run with:
 
 ```sh
-g++ -std=c++17 -o test_tasks tests/test_tasks.cpp
-./test_tasks
+python -m unittest tests/test_tasks.py -v
 ```
 
-A non-zero exit code indicates a failing assertion; failure output prints actual vs. expected for each check.
+`main.py`'s argv dispatch logic (`add`/`list`/`done`/`update`) is covered separately, by `tests/test_cli.py`, since it isn't decomposed into testable functions — it reads `sys.argv` directly, writes to stdout, and reads/writes the hardcoded `tasks.json` path. That test drives `python main.py` as a subprocess (once per test, in an isolated temp directory via `tempfile.TemporaryDirectory`) and asserts on its stdout and the resulting `tasks.json`. Run with:
 
-The CI smoke test (in the `build` job) is a separate, integration-level check — it exercises the compiled CLI binary end-to-end (argv parsing, file persistence across process invocations) — deliberately distinct from the unit tests, which never touch `main()`'s dispatch logic.
+```sh
+python -m unittest tests/test_cli.py -v
+```
+
+The CI smoke test (`smoke-test` job) is a separate, lighter integration check that just exercises a few CLI invocations inline in the workflow; `test_cli.py` (its own `cli-tests` job) is the fuller, assertion-based equivalent.
+
+`tests/test_claude_workflow.py` structurally validates `.github/workflows/claude.yml` (triggers, the `@claude`-mention gate, permissions, steps) by parsing it with PyYAML — see Tooling below. Run with:
+
+```sh
+python -m unittest tests/test_claude_workflow.py -v
+```
 
 ## Architecture
 
-- **`tasks.hpp`** — the reusable logic, included by both `main.cpp` and `tests/test_tasks.cpp`:
-  - **`Task` struct** — `{ id, text, done }`.
-  - **`JsonParser`** — a hand-rolled recursive-descent parser scoped only to the exact array-of-`{id,text,done}` shape this program writes (see `parseTasks`/`parseTask`). It is not a general JSON parser: unknown keys are skipped via `skipValue`, but the overall shape (top-level array of flat objects) is assumed, not validated. It is also tolerant of missing trailing `}`/`]` (see tests) rather than erroring.
-  - **`loadTasks`/`saveTasks`** — read/write `tasks.json` (path fixed via `kTasksFile`) using the parser above and manual string escaping (`escapeJson`) for serialization. There is no external JSON dependency.
-  - **`nextId`** — `max(existing ids) + 1` (not reused after deletion, though there is currently no delete command).
-- **`main.cpp`** — `main` dispatches on `argv[1]` (`add`, `list`, `done`, `update`) between loading tasks, mutating the in-memory vector, and saving back to disk.
+- **`tasks.py`** — the reusable logic, imported by both `main.py` and `tests/test_tasks.py`:
+  - **`Task`** — a `@dataclass` with `id`, `text`, `done`.
+  - **`load_tasks`/`save_tasks`** — read/write `tasks.json` (path fixed via `TASKS_FILE`) using the stdlib `json` module. No hand-rolled parser or external JSON dependency — unlike the retired C++ version, Python's stdlib already provides this.
+  - **`next_id`** — `max(existing ids) + 1` (not reused after deletion, though there is currently no delete command).
+- **`main.py`** — `main(argv)` dispatches on `argv[1]` (`add`, `list`, `done`, `update`) between loading tasks, mutating the in-memory list, and saving back to disk.
 
-`tasks.json` is created at runtime next to the executable and is not part of the source tree.
+`tasks.json` is created at runtime next to wherever the CLI is invoked and is not part of the source tree.
 
 ## Tooling
 
 Use the `/permissions` command in Claude Code to view or change which tools/commands are auto-allowed, ask for confirmation, or are denied in this project.
+
+`.claude/settings.json` runs `black` on `.py` files via a `PostToolUse` hook after every Write/Edit, so files are kept auto-formatted during a Claude Code session. Requires `pip install black`; the hook no-ops (rather than failing) if black isn't installed.
+
+`tests/test_claude_workflow.py` parses the Claude workflow YAML with PyYAML for real structural validation. Requires `pip install pyyaml`; if it isn't installed, that test module's cases are skipped (not failed) rather than erroring out the rest of the suite.
