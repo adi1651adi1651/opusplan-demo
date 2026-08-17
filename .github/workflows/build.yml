@@ -5,25 +5,37 @@ on:
   pull_request:
 
 jobs:
-  build:
+  smoke-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile main.cpp
-        run: g++ -std=c++17 -Wall -Wextra -o tasks main.cpp
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Smoke test CLI
         run: |
-          ./tasks add "test task"
-          ./tasks list
-          ./tasks done 1
-          ./tasks update 1 "updated task"
-          ./tasks list
+          python main.py add "test task"
+          python main.py list
+          python main.py done 1
+          python main.py update 1 "updated task"
+          python main.py list
 
   unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile unit tests
-        run: g++ -std=c++17 -Wall -Wextra -o test_tasks tests/test_tasks.cpp
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Run unit tests
-        run: ./test_tasks
+        run: python -m unittest tests/test_tasks.py -v
+
+  cli-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run CLI process tests
+        run: python -m unittest tests/test_cli.py -v
