@@ -100,6 +100,7 @@ def main():
     for sub in split_commands(command):
         reason = check_rm(sub) or check_git(sub) or check_npm(sub)
         if reason:
+            # TODO: reviewed in print() audit, no cleanup action identified
             print(
                 json.dumps(
                     {

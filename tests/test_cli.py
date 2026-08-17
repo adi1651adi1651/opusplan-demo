@@ -62,6 +62,12 @@ class TestCli(unittest.TestCase):
         self.assertIn("Error: please provide task text.", r.stdout)
         self.assertEqual(read_tasks(self.cwd), [])
 
+    def test_add_blank_text(self):
+        r = run_cli(["add", "   "], self.cwd)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Error: please provide task text.", r.stdout)
+        self.assertEqual(read_tasks(self.cwd), [])
+
     def test_list_empty(self):
         r = run_cli(["list"], self.cwd)
         self.assertEqual(r.returncode, 0)
@@ -86,6 +92,13 @@ class TestCli(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("Error: please provide a task id.", r.stdout)
 
+    def test_done_invalid_id(self):
+        run_cli(["add", "buy milk"], self.cwd)
+        r = run_cli(["done", "abc"], self.cwd)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Error: task id must be an integer.", r.stdout)
+        self.assertFalse(read_tasks(self.cwd)[0]["done"])
+
     def test_update(self):
         run_cli(["add", "buy milk"], self.cwd)
         r = run_cli(["update", "1", "buy oat milk"], self.cwd)
@@ -107,6 +120,20 @@ class TestCli(unittest.TestCase):
         r2 = run_cli(["update", "1"], self.cwd)
         self.assertEqual(r2.returncode, 1)
         self.assertIn("Error: please provide a task id and new text.", r2.stdout)
+
+    def test_update_invalid_id(self):
+        run_cli(["add", "buy milk"], self.cwd)
+        r = run_cli(["update", "abc", "new text"], self.cwd)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Error: task id must be an integer.", r.stdout)
+        self.assertEqual(read_tasks(self.cwd)[0]["text"], "buy milk")
+
+    def test_update_blank_text(self):
+        run_cli(["add", "buy milk"], self.cwd)
+        r = run_cli(["update", "1", "   "], self.cwd)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Error: please provide task text.", r.stdout)
+        self.assertEqual(read_tasks(self.cwd)[0]["text"], "buy milk")
 
     def test_unknown_command(self):
         r = run_cli(["bogus"], self.cwd)

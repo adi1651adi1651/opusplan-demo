@@ -22,6 +22,7 @@ result = subprocess.run(
 
 if result.returncode != 0:
     output = (result.stdout + result.stderr).strip()
+    # TODO: reviewed in print() audit, no cleanup action identified
     print(
         json.dumps(
             {

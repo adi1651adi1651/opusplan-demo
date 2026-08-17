@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tasks import Task, load_tasks, next_id, save_tasks
+from tasks import Task, find_task, load_tasks, next_id, save_tasks
 
 
 class TestNextId(unittest.TestCase):
@@ -28,6 +28,19 @@ class TestNextId(unittest.TestCase):
         self.assertEqual(next_id(tasks), 5)
 
 
+class TestFindTask(unittest.TestCase):
+    def test_found(self):
+        tasks = [Task(1, "a", False), Task(2, "b", False)]
+        self.assertIs(find_task(tasks, 2), tasks[1])
+
+    def test_not_found(self):
+        tasks = [Task(1, "a", False)]
+        self.assertIsNone(find_task(tasks, 99))
+
+    def test_empty(self):
+        self.assertIsNone(find_task([], 1))
+
+
 class TestLoadSaveTasks(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.TemporaryDirectory()
@@ -39,7 +52,7 @@ class TestLoadSaveTasks(unittest.TestCase):
     def test_roundtrip(self):
         original = [
             Task(1, "buy milk", False),
-            Task(2, "say \"hi\"\nbye\tthere", True),
+            Task(2, 'say "hi"\nbye\tthere', True),
             Task(3, "walk the dog", False),
         ]
         save_tasks(self.path, original)

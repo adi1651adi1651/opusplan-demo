@@ -31,3 +31,10 @@ def save_tasks(path: str, tasks: list[Task]) -> None:
 
 def next_id(tasks: list[Task]) -> int:
     return max((t.id for t in tasks), default=0) + 1
+
+
+def find_task(tasks: list[Task], task_id: int) -> Task | None:
+    for t in tasks:
+        if t.id == task_id:
+            return t
+    return None
